@@ -11,6 +11,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     val longitude: Double by lazy { x.toDouble() / map.centerTile.x - 1.0 }
     val latitude: Double by lazy { y.toDouble() / map.centerTile.y - 1.0 }
 
+    // temperature decays linearly from the equator to the poles
     val temperature: Int by lazy {
         val tempRange = MapParameters.climate.equatorTemperature - MapParameters.climate.poleTemperature
         val baseTemp = MapParameters.climate.poleTemperature + tempRange * (1 - abs(latitude))
@@ -110,19 +111,19 @@ enum class TerrainType(val movement: Int, val defensive: Int, val improvement: I
     }
 }
 
-enum class Resources(value: Int) {
-    None(0),
-    DepletedMine(6),
-    Oasis(3),
-    Wheat(4),
-    PrimeCotton(6),
-    PrimeTobacco(6),
-    PrimeSugar(7),
-    Minerals(4),
-    Fishery(5),
-    Beaver(6),
-    Game(6),
-    PrimeTimber(6),
-    SilverDeposit(12),
-    OreDeposit(6)
-}
+//enum class Resources(value: Int) {
+//    None(0),
+//    DepletedMine(6),
+//    Oasis(3),
+//    Wheat(4),
+//    PrimeCotton(6),
+//    PrimeTobacco(6),
+//    PrimeSugar(7),
+//    Minerals(4),
+//    Fishery(5),
+//    Beaver(6),
+//    Game(6),
+//    PrimeTimber(6),
+//    SilverDeposit(12),
+//    OreDeposit(6)
+//}

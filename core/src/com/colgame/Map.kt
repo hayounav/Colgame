@@ -15,9 +15,9 @@ class Map {
     private val rng = Random(System.currentTimeMillis())
 
     fun generate() {
-        val maxWater = ((1 - MapParameters.landMass.mass) * width * height).toInt()
-        var waterCount = 0
-        val edgePrcnt = (centerTile.x - MapParameters.minEdgeDistance).toDouble() / centerTile.x
+        val elevationSeed = rng.nextDouble()
+
+        val edgePrcnt = (1 - MapParameters.minEdgeDistance)
 
         for (tile in tiles) {
             val possibleTiles = TerrainType.values()
@@ -27,30 +27,61 @@ class Map {
             val unforested = possibleTiles.filter { !it.forested }
             val water = possibleTiles.filter { it.isWater() }
 
+            val waterNoise =
+                    if (MapParameters.landMass == MapParameters.Landmass.Archipelago)
+                        getRidgedPerlinNoise(tile, elevationSeed)
+                    else getPerlinNoise(tile, elevationSeed)
+
             tile.type =
                     // have to have sealanes all along the eastern edge
-                    if (tile.x > width - MapParameters.minEdgeDistance / 2) {
-                        waterCount++
+                    if (tile.x > width * (1 - MapParameters.minEdgeDistance / 2)) {
                         TerrainType.SeaLane
                     }
                     // ensure both the atlantic and the pacific are present
-                    else if (abs(tile.longitude) > edgePrcnt) {
-                        waterCount++
+                    else if (abs(tile.longitude) > edgePrcnt * (1 - waterNoise)) {
                         water.random()
                     }
-                    // prevent too much ocean/sea tiles
-                    else if (waterCount < maxWater && rng.nextDouble() > MapParameters.landMass.mass) {
-                        waterCount++
+                    // consider landmass percentage
+                    else if (waterNoise > MapParameters.landMass.mass) {
                         water.random()
                     } else if (rng.nextDouble() < MapParameters.forestCover && forested.isNotEmpty())
                         forested.random()
-                    else
+                    else if (tile.neighbors.filter { tiles[it].type.isLand() }.size == tile.neighbors.size)
                         unforested.random()
+                    else
+                        unforested.filter { it != TerrainType.Lakes }.random()
         }
     }
 
-    fun containsCoordinates(x: Int, y: Int): Boolean = (x in 0..width) && (y in 0..height)
+    fun containsCoordinates(x: Int, y: Int): Boolean = (x in 0 until width) && (y in 0 until height)
 
     fun coordsToTileIndex(x: Int, y: Int): Int = x % width + y * width
+
+    /**
+     * Generates a perlin noise channel combining multiple octaves
+     *
+     * [nOctaves] is the number of octaves
+     * [persistence] is the scaling factor of octave amplitudes
+     * [lacunarity] is the scaling factor of octave frequencies
+     * [scale] is the distance the noise is observed from
+     */
+    private fun getPerlinNoise(tile: Tile, seed: Double,
+                               nOctaves: Int = 6,
+                               persistence: Double = 0.5,
+                               lacunarity: Double = 2.0,
+                               scale: Double = 10.0): Double {
+        return Perlin.noise3d(tile.x.toDouble(), tile.y.toDouble(), seed, nOctaves, persistence, lacunarity, scale)
+    }
+
+    /**
+     * Generates ridged perlin noise. As for parameters see [getPerlinNoise]
+     */
+    private fun getRidgedPerlinNoise(tile: Tile, seed: Double,
+                                     nOctaves: Int = 10,
+                                     persistence: Double = 0.5,
+                                     lacunarity: Double = 2.0,
+                                     scale: Double = 15.0): Double {
+        return Perlin.ridgedNoise3d(tile.x.toDouble(), tile.y.toDouble(), seed, nOctaves, persistence, lacunarity, scale)
+    }
 }
 
