@@ -60,13 +60,6 @@ class Colgame : Game() {
         camera.update()
     }
 
-    fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
-        val x = Gdx.input.deltaX.toFloat()
-        val y = Gdx.input.deltaY.toFloat()
-        camera.translate(-x, y)
-        return true
-    }
-
     override fun dispose() {
         super.dispose()
         batch.dispose()
@@ -77,7 +70,7 @@ class Colgame : Game() {
 
         fun initTextures() {
             for (type in TerrainType.values())
-                textures[type] = Texture(Gdx.files.local("${type.name}.png"))
+                textures[type] = Texture(Gdx.files.local("textures/${type.name}.png"))
         }
     }
 }
