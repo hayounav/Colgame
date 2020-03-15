@@ -15,7 +15,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     val temperature: Int by lazy {
         val tempRange = MapParameters.climate.equatorTemperature - MapParameters.climate.poleTemperature
         val baseTemp = MapParameters.climate.poleTemperature + tempRange * (1 - abs(latitude))
-        val temp = baseTemp + (-1 * MapParameters.tempuratureDeviation..MapParameters.tempuratureDeviation).random()
+        val temp = baseTemp + (-1 * MapParameters.temperatureDeviation..MapParameters.temperatureDeviation).random()
         if (temp > 40) 40 else if (temp < -20) -20 else temp.toInt()
     }
 

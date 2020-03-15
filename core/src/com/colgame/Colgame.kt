@@ -27,7 +27,7 @@ class Colgame : Game() {
         camera = OrthographicCamera()
         camera.setToOrtho(false, 800f, 480f)
 
-        Gdx.graphics.isContinuousRendering = false
+//        Gdx.graphics.isContinuousRendering = false
 
         initTextures()
     }
