@@ -14,12 +14,14 @@ class Colgame : Game() {
     lateinit var camera: OrthographicCamera
     lateinit var batch: Batch
 
-    private val map: Map = Map(56, 70)
+    private val map: Map = Map()
 
     private var viewEntireMapForDebug = false
     val simulateUntilTurnForDebug: Int = 0
 
     override fun create() {
+        map.generate()
+
         Gdx.input.setCatchKey(Input.Keys.BACK, true)
 
         camera = OrthographicCamera()
@@ -35,14 +37,34 @@ class Colgame : Game() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         batch = SpriteBatch()
-//        batch.projectionMatrix = camera.combined
+        batch.setProjectionMatrix(camera.combined)
         batch.begin()
         for (tile in map.tiles) {
-            println("${tile.x} ${tile.y}")
-            batch.draw(tileTexture(tile.baseTerrain), tile.x * 20f, tile.y * 20f)
+            batch.draw(textures[tile.type], tile.x * 25f, tile.y * 25f, 25f, 25f)
         }
         batch.end()
 
+        if(Gdx.input.isKeyPressed(Input.Keys.LEFT))
+            camera.translate(-10f, 0f)
+        if(Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+            camera.translate(10f, 0f)
+        if(Gdx.input.isKeyPressed(Input.Keys.UP))
+            camera.translate(0f, 10f)
+        if(Gdx.input.isKeyPressed(Input.Keys.DOWN))
+            camera.translate(0f, -10f)
+        if(Gdx.input.isKeyPressed(Input.Keys.MINUS))
+            camera.zoom += 0.1f
+        if(Gdx.input.isKeyPressed(Input.Keys.PLUS))
+            camera.zoom -= 0.1f
+
+        camera.update()
+    }
+
+    fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
+        val x = Gdx.input.deltaX.toFloat()
+        val y = Gdx.input.deltaY.toFloat()
+        camera.translate(-x, y)
+        return true
     }
 
     override fun dispose() {
@@ -51,30 +73,11 @@ class Colgame : Game() {
     }
 
     companion object {
-        private val textures = Array<Texture?>(9) { null }
+        val textures = HashMap<TerrainType, Texture>()
 
         fun initTextures() {
-            textures[0] = Texture(Gdx.files.local("Desert.png"))
-            textures[1] = Texture(Gdx.files.local("Arctic.png"))
-            textures[2] = Texture(Gdx.files.local("Marsh.png"))
-            textures[3] = Texture(Gdx.files.local("Mountains.png"))
-            textures[4] = Texture(Gdx.files.local("Ocean.png"))
-            textures[5] = Texture(Gdx.files.local("Plains.png"))
-            textures[6] = Texture(Gdx.files.local("Savannah.png"))
-            textures[7] = Texture(Gdx.files.local("Swamp.png"))
-            textures[8] = Texture(Gdx.files.local("Grassland.png"))
-        }
-
-        fun tileTexture(type: TerrainType): Texture = when (type) {
-            TerrainType.Desert, TerrainType.Scrub -> textures[0]!!
-            TerrainType.Arctic, TerrainType.Tundra -> textures[1]!!
-            TerrainType.Marsh, TerrainType.Wetland -> textures[2]!!
-            TerrainType.Hills, TerrainType.Mountains -> textures[3]!!
-            TerrainType.Ocean, TerrainType.SeaLane -> textures[4]!!
-            TerrainType.Plains, TerrainType.Mixed -> textures[5]!!
-            TerrainType.Savannah, TerrainType.Tropical -> textures[6]!!
-            TerrainType.Swamp, TerrainType.Rain -> textures[7]!!
-            else -> textures[8]!!
+            for (type in TerrainType.values())
+                textures[type] = Texture(Gdx.files.local("${type.name}.png"))
         }
     }
 }
