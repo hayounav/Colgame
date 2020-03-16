@@ -31,6 +31,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     var coast = false
     var type = TerrainType.Ocean
     var lostCityRumors = false
+    var continentID = 0
 
     init {
         val tmpNeighbors = ArrayList<Int>()
