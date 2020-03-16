@@ -30,6 +30,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
 
     var coast = false
     var type = TerrainType.Ocean
+    var ocean = false
     var lostCityRumors = false
     var continentID = 0
 
@@ -93,8 +94,8 @@ enum class TerrainType(val movement: Int, val defensive: Int, val improvement: I
     Ocean(1, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0),
     SeaLane(1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0);
 
-    fun isWater() : Boolean = this == Ocean || this == SeaLane
-    fun isLand() : Boolean = !this.isWater()
+    fun isWater(): Boolean = this == Ocean || this == SeaLane || this == Lakes
+    fun isLand(): Boolean = !this.isWater()
 
     fun deforest(): TerrainType {
         return when (this) {

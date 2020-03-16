@@ -24,7 +24,39 @@ class Map {
 
     fun generate() {
         growContinents()
+        distributeBioms()
+        findLakes()
+    }
 
+    private fun findLakes() {
+        var oceans = tiles.indices.filter { tiles[it].ocean } as MutableList
+        val unsortedWater = HashSet(tiles.indices.filter { tiles[it].type.isWater() && it !in oceans })
+
+        var changed = true
+        while (changed) {
+            changed = false
+            val newOceans = mutableListOf<Int>()
+            for (i in oceans) {
+                for (n in tiles[i].neighbors) {
+                    if (n in unsortedWater) {
+                        changed = true
+                        tiles[n].ocean = true
+                        newOceans.add(n)
+                        unsortedWater.remove(n)
+                    } else if (tiles[n].type.isLand()) {
+                        tiles[n].coast = true
+                    }
+                }
+            }
+            oceans = newOceans
+        }
+
+        for (n in unsortedWater) {
+            tiles[n].type = TerrainType.Lakes
+        }
+    }
+
+    private fun distributeBioms() {
         val noiseSeed = rng.nextDouble()
         val edgePrcnt = (1 - MapParameters.minEdgeDistance)
         val continentNoise = HashMap<Int, Double>()
@@ -38,16 +70,19 @@ class Map {
                 tile.x == (width - 1) -> {
                     tile.type = TerrainType.SeaLane
                     tile.continentID = 0
+                    tile.ocean = true
                 }
                 // only the eastern edge can have protruding sealanes
                 tile.longitude >= (edgePrcnt * (1 - waterNoise)) -> {
                     tile.type = if (rng.nextDouble() < 0.5) TerrainType.Ocean else TerrainType.SeaLane
                     tile.continentID = 0
+                    tile.ocean = true
                 }
                 // ensure both the atlantic and the pacific are present
                 abs(tile.longitude) >= (edgePrcnt * min(1.0, (1 - waterNoise))) -> {
                     tile.type = TerrainType.Ocean
                     tile.continentID = 0
+                    tile.ocean = true
                 }
             }
 
@@ -74,16 +109,13 @@ class Map {
                             .filter { if (elevation < MapParameters.minHillsElevation) it != TerrainType.Hills else true }
                     val forested = possibleTiles.filter { it.forested }
                     val unforested = possibleTiles.filter { it.isLand() && !it.forested }
-                    val noLake = unforested.filter { it != TerrainType.Lakes }
 
                     tile.type = if (rng.nextDouble() < MapParameters.forestCover && forested.isNotEmpty())
                         forested.random()
-                    else if (unforested.isNotEmpty() /*&& tile.neighbors.count { tiles[it].type.isLand() } == tile.neighbors.size*/)
+                    else if (unforested.isNotEmpty())
                         unforested.random()
-//                    else if (noLake.isNotEmpty())
-//                        noLake.random()
                     else
-                        TerrainType.SeaLane//tile.type
+                        throw Exception("Terrain matching constraints unavailable: Tile -- ${tile}, elevation -- $elevation")
                 }
             }
         }
@@ -139,17 +171,6 @@ class Map {
                                lacunarity: Double = 2.0,
                                scale: Double = 10.0): Double {
         return Perlin.noise3d(tile.x.toDouble(), tile.y.toDouble(), seed, nOctaves, persistence, lacunarity, scale)
-    }
-
-    /**
-     * Generates ridged perlin noise. As for parameters see [getPerlinNoise]
-     */
-    private fun getRidgedPerlinNoise(tile: Tile, seed: Double,
-                                     nOctaves: Int = 10,
-                                     persistence: Double = 0.5,
-                                     lacunarity: Double = 2.0,
-                                     scale: Double = 15.0): Double {
-        return Perlin.ridgedNoise3d(tile.x.toDouble(), tile.y.toDouble(), seed, nOctaves, persistence, lacunarity, scale)
     }
 }
 
