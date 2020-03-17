@@ -34,6 +34,8 @@ class Tile(map: Map, val x: Int, val y: Int) {
     var lostCityRumors = false
     var continentID = 0
 
+    var river: River? = null
+
     init {
         val tmpNeighbors = ArrayList<Int>()
         for (xx in -1..1) {
@@ -56,6 +58,13 @@ class Tile(map: Map, val x: Int, val y: Int) {
     fun getDistance(destination: Tile): Int {
         return max(abs(x - destination.x), abs(y - destination.y))
     }
+}
+
+data class River (val from : Direction, val to : Direction)
+
+enum class Direction {
+    E, N, W, S,
+    NE, NW, SE, SW
 }
 
 enum class TerrainType(val movement: Int, val defensive: Int, val improvement: Int, val value: Int,
@@ -112,20 +121,3 @@ enum class TerrainType(val movement: Int, val defensive: Int, val improvement: I
         }
     }
 }
-
-//enum class Resources(value: Int) {
-//    None(0),
-//    DepletedMine(6),
-//    Oasis(3),
-//    Wheat(4),
-//    PrimeCotton(6),
-//    PrimeTobacco(6),
-//    PrimeSugar(7),
-//    Minerals(4),
-//    Fishery(5),
-//    Beaver(6),
-//    Game(6),
-//    PrimeTimber(6),
-//    SilverDeposit(12),
-//    OreDeposit(6)
-//}

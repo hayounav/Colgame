@@ -22,28 +22,29 @@ object MapParameters {
     const val humidityDeviation = 0.1
 
     enum class Size(val width: Int, val height: Int, val landmasses: Int) {
-        VerySmall(40,50, 1),
-        Small(48,60, 1),
-        Medium(56,70, 2),
-        Large(64,80, 3),
-        VeryLarge(72,90, 4)
+        VerySmall(40, 50, 1),
+        Small(48, 60, 1),
+        Medium(56, 70, 2),
+        Large(64, 80, 3),
+        VeryLarge(72, 90, 4)
     }
 
-    enum class Landmass(val multiplier: Int, val decay : Double){
-        Islands(20, 0.35),
-        Archipelago(20, 0.01),
-        Continent(20, 0.001)
+    enum class Landmass(val multiplier: Int, val decay: Double, val maxLand : Double) {
+        Islands(20, 0.3, 0.2),
+        Archipelago(20, 0.01, 0.35),
+        Continent(20, 0.001, 0.6)
     }
 
-    val forestCover : Double by lazy { humidity.prcnt * 0.5 }
-    const val minEdgeDistance : Double = 0.15
+    val forestCover: Double by lazy { humidity.prcnt * 0.5 }
+    const val minEdge: Double = 0.15
     const val minMountainsElevation = 0.7
     const val minHillsElevation = 0.3
 
     // default map settings
     val size = Size.VerySmall
-    val landMass = Landmass.Continent
+    val landMass = Landmass.Archipelago
     var climate = Climate.Temperate
     var humidity = Humidity.VeryWet
+    var baseRiverAmount = 0.05
 
 }
