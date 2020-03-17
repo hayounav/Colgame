@@ -107,9 +107,9 @@ class Map {
         val minOceanWidth = (MapParameters.minEdge * width).toInt()
 
         // North Pole
-        val northEdge = tiles.sliceArray(0 until width)
-        var northPoleWestCoast = northEdge.indices.first { tiles[it].type.isLand() }
-        var northPoleEastCoast = northEdge.indices.last { tiles[it].type.isLand() }
+        val northEdge = tiles.indices.take(width).filter { tiles[it].type.isLand() }
+        var northPoleWestCoast = if (northEdge.isEmpty()) minOceanWidth + 1 else northEdge.first()
+        var northPoleEastCoast = if (northEdge.isEmpty()) width - minOceanWidth - 1 else northEdge.last()
 
         if (northPoleWestCoast <= minOceanWidth)
             northPoleWestCoast = minOceanWidth + 1
@@ -117,21 +117,36 @@ class Map {
         if (northPoleEastCoast >= width - minOceanWidth)
             northPoleEastCoast = width - minOceanWidth - 1
 
-        for (i in northPoleWestCoast until northPoleEastCoast) tiles[i].type = TerrainType.Plains
+        for (i in northPoleWestCoast until northPoleEastCoast) {
+            tiles[i].type = TerrainType.Plains
+            tiles[i].continentID = if (i - northPoleWestCoast < northPoleEastCoast - i) {
+                tiles[northPoleWestCoast].continentID
+            } else {
+                tiles[northPoleEastCoast].continentID
+            }
+        }
 
 
         // South Pole
-        val southEdge = tiles.sliceArray(width * (height - 1) until width * height)
-        var southPoleWestCoast = southEdge.indices.first { tiles[it].type.isLand() }
-        var southPoleEastCoast = southEdge.indices.last { tiles[it].type.isLand() }
+        val lastRow = width*(height-1)
+        val southEdge = tiles.indices.drop(lastRow).filter { tiles[it].type.isLand() }
+        var southPoleWestCoast = if (southEdge.isEmpty()) minOceanWidth + 1 else southEdge.first()
+        var southPoleEastCoast = if (southEdge.isEmpty()) width - minOceanWidth - 1 else southEdge.last()
 
         if (southPoleWestCoast <= minOceanWidth)
-            southPoleWestCoast = minOceanWidth + 1
+            southPoleWestCoast = lastRow + minOceanWidth + 1
 
         if (southPoleEastCoast > width - minOceanWidth)
-            southPoleEastCoast = width - minOceanWidth - 1
+            southPoleEastCoast = lastRow + width - minOceanWidth - 1
 
-        for (i in southPoleWestCoast until southPoleEastCoast) tiles[i].type = TerrainType.Plains
+        for (i in southPoleWestCoast until southPoleEastCoast) {
+            tiles[i].type = TerrainType.Plains
+            tiles[i].continentID = if (i - southPoleWestCoast < southPoleEastCoast - i) {
+                tiles[southPoleWestCoast].continentID
+            } else {
+                tiles[southPoleEastCoast].continentID
+            }
+        }
 
     }
 
