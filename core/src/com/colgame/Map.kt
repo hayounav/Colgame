@@ -193,6 +193,8 @@ class Map {
             var elevation = getPerlinNoise(tile, continentNoise[tile.continentID]!!, scale = 3.0)
             elevation = abs(elevation).pow(1.0 - 0.8f) * elevation.sign
 
+            tile.elevation = elevation
+
             when {
                 elevation > 0.9 -> {
                     tile.type = TerrainType.Mountains
@@ -229,13 +231,21 @@ class Map {
         val numMountains = tiles.filter {
             it.type == TerrainType.Mountains &&
                     it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }
+        }.shuffled()
         val numHills = tiles.filter {
             it.type == TerrainType.Hills &&
                     it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }
+        }.shuffled()
+        val numFlat = tiles.filter {
+            it.type.isLand() && it.type != TerrainType.Mountains &&
+                    it.type != TerrainType.Hills &&
+                    it.neighbors.none { tiles[it].type == TerrainType.Ocean } &&
+                    it.elevation >= 0.3 &&
+                    it.elevation >= it.neighbors.map { tiles[it].elevation }.min()!!
+        }.shuffled()
+
         val numLakes = tiles.filter { it.type == TerrainType.Lakes }
-        println("$numRiverSpawns ${numMountains.size} ${numHills.size} ${numLakes.size}")
+        println("$numRiverSpawns ${numMountains.size} ${numHills.size} ${numFlat.size} ${numLakes.size}")
 
         // river source chances affected by temperature and humidity
         // make rivers from some non-ocean-adjoining mountains to nearest lake (snow melt)

@@ -5,7 +5,6 @@ import kotlin.math.max
 import kotlin.random.Random
 
 class Tile(map: Map, val x: Int, val y: Int) {
-
     val neighbors: Array<Int>
 
     val longitude: Double by lazy { x.toDouble() / map.centerTile.x - 1.0 }
@@ -33,6 +32,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     var ocean = false
     var lostCityRumors = false
     var continentID = 0
+    var elevation = 0.0
 
     var river: River? = null
 

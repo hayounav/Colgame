@@ -40,21 +40,28 @@ class Colgame : Game() {
         batch.setProjectionMatrix(camera.combined)
         batch.begin()
         for (tile in map.tiles) {
-            batch.draw(textures[tile.type], tile.x * 25f, tile.y * 25f, 25f, 25f)
+            batch.draw(terrainTextures[tile.type], tile.x * 25f, tile.y * 25f, 25f, 25f)
+
+            val r = tile.river
+            if (r != null) {
+                if (!riverTextures.containsKey(r))
+                    riverTextures[r] = Texture(Gdx.files.local("textures/River_${r.from.name}_${r.to.name}.png"))
+                batch.draw(riverTextures[r], tile.x * 25f, tile.y * 25f, 25f, 25f)
+            }
         }
         batch.end()
 
-        if(Gdx.input.isKeyPressed(Input.Keys.LEFT))
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
             camera.translate(-10f, 0f)
-        if(Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
             camera.translate(10f, 0f)
-        if(Gdx.input.isKeyPressed(Input.Keys.UP))
+        if (Gdx.input.isKeyPressed(Input.Keys.UP))
             camera.translate(0f, 10f)
-        if(Gdx.input.isKeyPressed(Input.Keys.DOWN))
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
             camera.translate(0f, -10f)
-        if(Gdx.input.isKeyPressed(Input.Keys.MINUS))
+        if (Gdx.input.isKeyPressed(Input.Keys.MINUS))
             camera.zoom += 0.1f
-        if(Gdx.input.isKeyPressed(Input.Keys.PLUS))
+        if (Gdx.input.isKeyPressed(Input.Keys.PLUS))
             camera.zoom -= 0.1f
 
         camera.update()
@@ -66,11 +73,12 @@ class Colgame : Game() {
     }
 
     companion object {
-        val textures = HashMap<TerrainType, Texture>()
+        val terrainTextures = HashMap<TerrainType, Texture>()
+        val riverTextures = HashMap<River, Texture>()
 
         fun initTextures() {
             for (type in TerrainType.values())
-                textures[type] = Texture(Gdx.files.local("textures/${type.name}.png"))
+                terrainTextures[type] = Texture(Gdx.files.local("textures/${type.name}.png"))
         }
     }
 }
