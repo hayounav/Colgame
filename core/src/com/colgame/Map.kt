@@ -235,32 +235,96 @@ class Map {
 
     private fun addRivers() {
         val numRiverSpawns = MapParameters.baseRiverAmount * tiles.count { it.type.isLand() }
-        val numMountains = tiles.filter {
-            it.type == TerrainType.Mountains &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }.shuffled()
-        val numHills = tiles.filter {
-            it.type == TerrainType.Hills &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }.shuffled()
-        val numFlat = tiles.filter {
-            it.type.isLand() && it.type != TerrainType.Mountains &&
-                    it.type != TerrainType.Hills &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean } &&
-                    it.elevation >= 0.3 &&
-                    it.elevation >= it.neighbors.map { tiles[it].elevation }.min()!!
-        }.shuffled()
-
-        val numLakes = tiles.filter { it.type == TerrainType.Lakes }
-        println("$numRiverSpawns ${numMountains.size} ${numHills.size} ${numFlat.size} ${numLakes.size}")
 
         // river source chances affected by temperature and humidity
-        // make rivers from some non-ocean-adjoining mountains to nearest lake (snow melt)
-        // make rivers from some non-ocean-adjoining mountains to nearest ocean (snow melt)
-        // make rivers from some non-ocean-adjoining hills to nearest lake (springs)
-        // make rivers from some non-ocean-adjoining hills to nearest ocean (springs)
-        // make rivers from some non-ocean-adjoining tile to nearest lake (rain)
-        // make rivers from some non-ocean-adjoining tile to nearest ocean (rain)
+        val eligibleTiles = tiles.filter {
+            it.type.isLand() &&
+                    it.humidity > 0.1 &&
+                    it.neighbors.none { n -> tiles[n].type.isWater() }
+        }
+        val eligibleMountains = eligibleTiles.filter { it.type == TerrainType.Mountains }
+        val eligibleHills = eligibleTiles.filter { it.type == TerrainType.Hills }
+
+        val numMountainRivers = min((0.7 * numRiverSpawns).toInt(), eligibleMountains.size)
+        val numHillRivers = min((0.15 * numRiverSpawns).toInt(), eligibleHills.size)
+        var numFlatRivers = numRiverSpawns.toInt() - numMountainRivers - numHillRivers
+
+        // make rivers from some non-ocean-adjoining mountains
+        eligibleMountains.shuffled().take(numMountainRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isEmpty())
+                numFlatRivers += 1
+            else
+                applyRiver(river)
+        }
+
+        // make rivers from some non-ocean-adjoining hills
+        eligibleHills.shuffled().take(numHillRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isEmpty())
+                numFlatRivers += 1
+            else
+                applyRiver(river)
+        }
+
+        // make rivers from some non-ocean-adjoining tile
+        eligibleTiles.filter {
+            it.type != TerrainType.Mountains &&
+                    it.type != TerrainType.Hills &&
+                    it.type != TerrainType.Arctic &&
+                    it.neighbors.none { n -> tiles[n].type.isWater() } &&
+                    it.elevation >= it.neighbors.map { n -> tiles[n].elevation }.min()!!
+        }.shuffled().take(numFlatRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isNotEmpty())
+                applyRiver(river)
+        }
+    }
+
+    private fun applyRiver(river: List<Tile>) {
+        for (it in river) {
+            print("{")
+            print(it.x)
+            print(" ")
+            print(it.y)
+            print("} => ")
+        }
+        println("end")
+
+        for (i in 1 until river.size-1) {
+            val current = river[i]
+            val fromDelta = Pair(river[i-1].x - current.x, river[i-1].y - current.y)
+            val toDelta = Pair(river[i+1].x - current.x, river[i+1].y - current.y)
+            current.river = River(fromDelta, toDelta)
+        }
+    }
+
+    private fun flowFromSource(from: Tile): List<Tile> {
+        var current = from
+
+        val river = mutableListOf<Tile>()
+
+        while (true) {
+            river.add(current)
+
+            // reached water, so river ends
+            if (current.type.isWater()) break
+
+            // merged with another river
+            // TODO: make the other river bigger
+            if (current.river != null) break
+
+            val neighbors = current.neighbors.map {tiles[it]}.sortedBy { it.elevation }
+            val downhill =  neighbors[0]
+            if (downhill.elevation <= current.elevation ){
+                current = downhill
+            } else return mutableListOf<Tile>()
+        }
+
+        return river
     }
 
     private fun scatterBonusResources() {

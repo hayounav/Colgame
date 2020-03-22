@@ -60,7 +60,27 @@ class Tile(map: Map, val x: Int, val y: Int) {
     }
 }
 
-data class River (val from : Direction, val to : Direction)
+class River (private val fromDelta : Pair<Int, Int>?, private val toDelta : Pair<Int, Int>) {
+    val from : Direction? = offsetToDir(fromDelta)
+    val to : Direction = offsetToDir(toDelta)!!
+
+    private fun offsetToDir(delta : Pair<Int, Int>?): Direction? {
+        if (delta == null) return null
+        return when {
+            delta.first == -1 && delta.second == -1 -> Direction.SW
+            delta.first == -1 && delta.second == 0 -> Direction.W
+            delta.first == -1 && delta.second == 1 -> Direction.NW
+            delta.first == 0 && delta.second == -1 -> Direction.S
+            //delta.first == 0 && delta.second == 0 -> center
+            delta.first == 0 && delta.second == 1 -> Direction.N
+            delta.first == 1 && delta.second == -1 -> Direction.SE
+            delta.first == 1 && delta.second == 0 -> Direction.E
+            delta.first == 1 && delta.second == 1 -> Direction.NE
+            else -> throw Exception() // should never happen
+        }
+    }
+
+}
 
 enum class Direction {
     E, N, W, S,

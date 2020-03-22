@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.Batch
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.utils.GdxRuntimeException
 
 class Colgame : Game() {
 
@@ -43,9 +44,13 @@ class Colgame : Game() {
             batch.draw(terrainTextures[tile.type], tile.x * 25f, tile.y * 25f, 25f, 25f)
 
             val r = tile.river
-            if (r != null) {
+            if (r?.from != null) {
                 if (!riverTextures.containsKey(r))
-                    riverTextures[r] = Texture(Gdx.files.local("textures/River_${r.from.name}_${r.to.name}.png"))
+                    try {
+                        riverTextures[r] = Texture(Gdx.files.local("textures/River_${r.from.name}_${r.to.name}.png"))
+                    } catch (e: GdxRuntimeException) {
+                        riverTextures[r] = Texture(Gdx.files.local("textures/River_${r.to.name}_${r.from.name}.png"))
+                    }
                 batch.draw(riverTextures[r], tile.x * 25f, tile.y * 25f, 25f, 25f)
             }
         }
