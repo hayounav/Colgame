@@ -33,7 +33,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     var lostCityRumors = false
     var continentID = 0
     var elevation = 0.0
-
+    var resource: BonusResource = BonusResource.None
     var river: River? = null
 
     init {
@@ -60,11 +60,11 @@ class Tile(map: Map, val x: Int, val y: Int) {
     }
 }
 
-class River (private val fromDelta : Pair<Int, Int>?, private val toDelta : Pair<Int, Int>) {
-    val from : Direction? = offsetToDir(fromDelta)
-    val to : Direction = offsetToDir(toDelta)!!
+class River(private val fromDelta: Pair<Int, Int>?, private val toDelta: Pair<Int, Int>) {
+    val from: Direction? = offsetToDir(fromDelta)
+    val to: Direction = offsetToDir(toDelta)!!
 
-    private fun offsetToDir(delta : Pair<Int, Int>?): Direction? {
+    private fun offsetToDir(delta: Pair<Int, Int>?): Direction? {
         if (delta == null) return null
         return when {
             delta.first == -1 && delta.second == -1 -> Direction.SW
@@ -91,37 +91,37 @@ enum class TerrainType(val movement: Int, val defensive: Int, val improvement: I
                        val grain: Int, val sugar: Int, val tobacco: Int, val cotton: Int,
                        val furs: Int, val lumber: Int, val ore: Int, val silver: Int, val fish: Int,
                        val minTemp: Int, val maxTemp: Int, val minHumidity: Double, val maxHumidity: Double,
-                       val forested: Boolean = false) {
+                       val bonusResource: BonusResource, val forested: Boolean = false) {
 
     // UNFORESTED
-    Tundra(1, 0, 4, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, -5, 5, 0.0, 1.0),
-    Desert(1, 0, 3, 2, 1, 0, 0, 1, 0, 0, 2, 0, 0, 10, 40, 0.0, 0.25),
-    Plains(1, 0, 3, 4, 4, 0, 0, 2, 0, 0, 1, 0, 0, 0, 15, 0.0, 0.6),
-    Prairie(1, 0, 3, 4, 2, 0, 0, 3, 0, 0, 0, 0, 0, 15, 30, 0.2, 0.5),
-    Grassland(1, 0, 3, 4, 2, 0, 3, 0, 0, 0, 0, 0, 0, 10, 25, 0.25, 0.7),
-    Savannah(1, 0, 3, 4, 3, 3, 0, 0, 0, 0, 0, 0, 0, 30, 40, 0.25, 0.7),
-    Marsh(2, 1, 5, 2, 2, 0, 2, 0, 0, 0, 2, 0, 0, 5, 15, 0.5, 1.0),
-    Swamp(2, 1, 7, 2, 2, 2, 0, 0, 0, 0, 2, 0, 0, 10, 40, 0.5, 1.0),
+    Tundra(1, 0, 4, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, -5, 5, 0.0, 1.0, BonusResource.Minerals),
+    Desert(1, 0, 3, 2, 1, 0, 0, 1, 0, 0, 2, 0, 0, 10, 40, 0.0, 0.25, BonusResource.Oasis),
+    Plains(1, 0, 3, 4, 4, 0, 0, 2, 0, 0, 1, 0, 0, 0, 15, 0.0, 0.6, BonusResource.Wheat),
+    Prairie(1, 0, 3, 4, 2, 0, 0, 3, 0, 0, 0, 0, 0, 15, 30, 0.2, 0.5, BonusResource.PrimeCotton ),
+    Grassland(1, 0, 3, 4, 2, 0, 3, 0, 0, 0, 0, 0, 0, 10, 25, 0.25, 0.7, BonusResource.PrimeTobacco),
+    Savannah(1, 0, 3, 4, 3, 3, 0, 0, 0, 0, 0, 0, 0, 30, 40, 0.25, 0.7, BonusResource.PrimeTimber),
+    Marsh(2, 1, 5, 2, 2, 0, 2, 0, 0, 0, 2, 0, 0, 5, 15, 0.5, 1.0, BonusResource.Minerals),
+    Swamp(2, 1, 7, 2, 2, 2, 0, 0, 0, 0, 2, 0, 0, 10, 40, 0.5, 1.0, BonusResource.Minerals),
 
     // FORESTED
-    Boreal(2, 2, 4, 3, 1, 0, 0, 0, 3, 2, 1, 0, 0, -5, 5, 0.0, 1.0, true),
-    Scrub(1, 2, 4, 1, 1, 0, 0, 1, 2, 1, 1, 0, 0, 10, 40, 0.0, 0.25, true),
-    Mixed(2, 2, 4, 3, 2, 0, 0, 1, 3, 3, 0, 0, 0, 0, 15, 0.0, 0.6, true),
-    Broadleaf(2, 2, 4, 3, 1, 0, 0, 1, 2, 2, 0, 0, 0, 15, 30, 0.2, 0.5, true),
-    Conifer(2, 2, 4, 3, 1, 0, 1, 0, 2, 3, 0, 0, 0, 10, 25, 0.25, 0.7, true),
-    Tropical(2, 2, 6, 3, 2, 1, 0, 0, 2, 2, 0, 0, 0, 30, 40, 0.25, 0.7, true),
-    Wetland(3, 2, 6, 1, 1, 0, 1, 0, 2, 2, 1, 0, 0, 5, 15, 0.5, 1.0, true),
-    Rain(3, 3, 7, 1, 1, 1, 0, 0, 1, 2, 1, 0, 0, 10, 40, 0.5, 1.0, true),
+    Boreal(2, 2, 4, 3, 1, 0, 0, 0, 3, 2, 1, 0, 0, -5, 5, 0.0, 1.0, BonusResource.Minerals, true),
+    Scrub(1, 2, 4, 1, 1, 0, 0, 1, 2, 1, 1, 0, 0, 10, 40, 0.0, 0.25, BonusResource.Oasis, true),
+    Mixed(2, 2, 4, 3, 2, 0, 0, 1, 3, 3, 0, 0, 0, 0, 15, 0.0, 0.6, BonusResource.Wheat, true),
+    Broadleaf(2, 2, 4, 3, 1, 0, 0, 1, 2, 2, 0, 0, 0, 15, 30, 0.2, 0.5, BonusResource.PrimeCotton, true),
+    Conifer(2, 2, 4, 3, 1, 0, 1, 0, 2, 3, 0, 0, 0, 10, 25, 0.25, 0.7, BonusResource.PrimeTobacco, true),
+    Tropical(2, 2, 6, 3, 2, 1, 0, 0, 2, 2, 0, 0, 0, 30, 40, 0.25, 0.7, BonusResource.PrimeTimber, true),
+    Wetland(3, 2, 6, 1, 1, 0, 1, 0, 2, 2, 1, 0, 0, 5, 15, 0.5, 1.0, BonusResource.Minerals, true),
+    Rain(3, 3, 7, 1, 1, 1, 0, 0, 1, 2, 1, 0, 0, 10, 40, 0.5, 1.0, BonusResource.Minerals, true),
 
     // Special Land
-    Arctic(2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -20, 0, 0.0, 1.0),
-    Lakes(1, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0),
-    Mountains(3, 6, 7, 2, 0, 0, 0, 0, 0, 0, 4, 1, 0, -20, 40, 0.0, 1.0),
-    Hills(2, 4, 4, 2, 1, 0, 0, 0, 0, 0, 4, 0, 0, -20, 40, 0.0, 1.0),
+    Arctic(2, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -20, 0, 0.0, 1.0, BonusResource.None),
+    Lakes(1, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0, BonusResource.Fishery),
+    Mountains(3, 6, 7, 2, 0, 0, 0, 0, 0, 0, 4, 1, 0, -20, 40, 0.0, 1.0, BonusResource.SilverDeposit),
+    Hills(2, 4, 4, 2, 1, 0, 0, 0, 0, 0, 4, 0, 0, -20, 40, 0.0, 1.0, BonusResource.OreDeposit),
 
     // Ocean
-    Ocean(1, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0),
-    SeaLane(1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0);
+    Ocean(1, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0, BonusResource.Fishery),
+    SeaLane(1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -20, 40, 0.0, 1.0, BonusResource.None);
 
     fun isWater(): Boolean = this == Ocean || this == SeaLane || this == Lakes
     fun isLand(): Boolean = !this.isWater()
@@ -140,4 +140,11 @@ enum class TerrainType(val movement: Int, val defensive: Int, val improvement: I
             // else -> this // if we think silent failure is better
         }
     }
+}
+
+enum class BonusResource {
+    Game, PrimeTimber, Oasis, PrimeTobacco,
+    OreDeposit, Minerals, Beaver, SilverDeposit,
+    Fishery, Wheat, PrimeCotton, PrimeSugar,
+    None
 }

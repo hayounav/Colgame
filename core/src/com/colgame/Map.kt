@@ -197,7 +197,7 @@ class Map {
             if (!continentNoise.containsKey(tile.continentID))
                 continentNoise[tile.continentID] = rng.nextDouble()
 
-            var elevation = getPerlinNoise(tile, continentNoise[tile.continentID]!!)*(1+rng.nextDouble())
+            var elevation = getPerlinNoise(tile, continentNoise[tile.continentID]!!) * (1 + rng.nextDouble())
             elevation = abs(elevation).pow(0.25)
 
             tile.elevation = elevation
@@ -294,10 +294,10 @@ class Map {
         }
         println("end")
 
-        for (i in 1 until river.size-1) {
+        for (i in 1 until river.size - 1) {
             val current = river[i]
-            val fromDelta = Pair(river[i-1].x - current.x, river[i-1].y - current.y)
-            val toDelta = Pair(river[i+1].x - current.x, river[i+1].y - current.y)
+            val fromDelta = Pair(river[i - 1].x - current.x, river[i - 1].y - current.y)
+            val toDelta = Pair(river[i + 1].x - current.x, river[i + 1].y - current.y)
             current.river = River(fromDelta, toDelta)
         }
     }
@@ -317,9 +317,9 @@ class Map {
             // TODO: make the other river bigger
             if (current.river != null) break
 
-            val neighbors = current.neighbors.map {tiles[it]}.sortedBy { it.elevation }
-            val downhill =  neighbors[0]
-            if (downhill.elevation <= current.elevation ){
+            val neighbors = current.neighbors.map { tiles[it] }.sortedBy { it.elevation }
+            val downhill = neighbors[0]
+            if (downhill.elevation <= current.elevation) {
                 current = downhill
             } else return mutableListOf<Tile>()
         }
@@ -328,7 +328,12 @@ class Map {
     }
 
     private fun scatterBonusResources() {
-//        TODO("Not yet implemented")
+        tiles.filter { it.type.isLand() }.shuffled()
+                .take((MapParameters.bonusResources * tiles.size).toInt())
+                .forEach {
+                    //put relevant resource
+                    it.resource = it.type.bonusResource
+                }
     }
 
     /**

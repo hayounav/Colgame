@@ -39,6 +39,7 @@ object MapParameters {
     const val minEdge: Double = 0.15
     const val minMountainsElevation = 0.75
     const val minHillsElevation = 0.65
+    const val bonusResources = 0.1
 
     // default map settings
     val size = Size.VerySmall

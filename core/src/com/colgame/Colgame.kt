@@ -12,8 +12,8 @@ import com.badlogic.gdx.utils.GdxRuntimeException
 
 class Colgame : Game() {
 
-    lateinit var camera: OrthographicCamera
-    lateinit var batch: Batch
+    private lateinit var camera: OrthographicCamera
+    private lateinit var batch: Batch
 
     private val map: Map = Map()
 
@@ -38,7 +38,7 @@ class Colgame : Game() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         batch = SpriteBatch()
-        batch.setProjectionMatrix(camera.combined)
+        batch.projectionMatrix = camera.combined
         batch.begin()
         for (tile in map.tiles) {
             batch.draw(terrainTextures[tile.type], tile.x * 25f, tile.y * 25f, 25f, 25f)
@@ -52,6 +52,10 @@ class Colgame : Game() {
                         riverTextures[r] = Texture(Gdx.files.local("textures/River_${r.to.name}_${r.from.name}.png"))
                     }
                 batch.draw(riverTextures[r], tile.x * 25f, tile.y * 25f, 25f, 25f)
+            }
+
+            if (tile.resource != BonusResource.None) {
+                batch.draw(resourceTexture, tile.x * 25f, tile.y * 25f, 25f, 25f)
             }
         }
         batch.end()
@@ -78,10 +82,12 @@ class Colgame : Game() {
     }
 
     companion object {
+        lateinit var resourceTexture : Texture
         val terrainTextures = HashMap<TerrainType, Texture>()
         val riverTextures = HashMap<River, Texture>()
 
         fun initTextures() {
+            resourceTexture = Texture(Gdx.files.local("textures/BonusResource.png"))
             for (type in TerrainType.values())
                 terrainTextures[type] = Texture(Gdx.files.local("textures/${type.name}.png"))
         }
