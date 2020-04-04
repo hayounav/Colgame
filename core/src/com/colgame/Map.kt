@@ -3,7 +3,6 @@ package com.colgame
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sign
 import kotlin.random.Random
 
 class Map {
@@ -48,20 +47,29 @@ class Map {
                     Seed(tile, maxEnergy - maxEnergy * rng.nextDouble())
                 } as MutableList<Seed>
 
+        for (t in tiles) {
+            t.continentID = seedList.minBy { it.tile.getDistance(t) }!!.tile.continentID
+        }
+
         val maxLandTiles = (width * (1 - MapParameters.minEdge)) * height * MapParameters.landMass.maxLand
         val stepCost = 1 - MapParameters.landMass.decay
         var numLand = seedList.size
         while (numLand < maxLandTiles && seedList.isNotEmpty()) {
             val seedTile = seedList.removeAt(0)
 
-            // lower probability of growing too far east or west
-            var next = seedTile.tile.neighbors.random()
-            if (tiles[next].x !in validLandXRange)
-                next = seedTile.tile.neighbors.random()
+            var next: Int? = null
+            for (n in seedTile.tile.neighbors.asList().shuffled()) {
+                if (tiles[n].type != TerrainType.Plains &&
+                        tiles[n].continentID == seedTile.tile.continentID) {
+                    next = n
+                    break
+                }
+            }
 
-            if (tiles[next].type == TerrainType.Plains) continue
+            if (next == null)
+                continue
+
             tiles[next].type = TerrainType.Plains
-            tiles[next].continentID = seedTile.tile.continentID
             if (seedTile.energy > 1)
                 seedList.add(Seed(tiles[next], seedTile.energy * stepCost))
             seedTile.energy *= stepCost
@@ -69,6 +77,17 @@ class Map {
                 seedList.add(seedTile)
 
             numLand += 1
+        }
+
+        // single-tile island have a 50-50 chance to disappear or grow
+        for (t in tiles.filter { it.type.isLand() && it.neighbors.none { n -> tiles[n].type.isLand() } }) {
+            val p = rng.nextDouble()
+            if (rng.nextDouble() > 0.5) {
+                t.neighbors.toList().shuffled().take((p * 8).toInt())
+                        .forEach { tiles[it].type = TerrainType.Plains }
+            } else {
+                t.type = TerrainType.Ocean
+            }
         }
     }
 
@@ -84,19 +103,17 @@ class Map {
                 // have to have sealanes all along the eastern edge
                 tile.x == (width - 1) -> {
                     tile.type = TerrainType.SeaLane
-                    tile.continentID = 0
                     tile.ocean = true
                 }
                 // only the eastern edge can have protruding sealanes
                 tile.longitude >= (edgePrcnt * (1 - waterNoise)) -> {
-                    tile.type = if (rng.nextDouble() < 0.5) TerrainType.Ocean else TerrainType.SeaLane
-                    tile.continentID = 0
+                    tile.type = if (rng.nextDouble() < 0.5 && tile.neighbors.none { tiles[it].type.isLand() })
+                        TerrainType.SeaLane else TerrainType.Ocean
                     tile.ocean = true
                 }
                 // ensure both the atlantic and the pacific are present
                 abs(tile.longitude) >= (edgePrcnt * min(1.0, (1 - waterNoise))) -> {
                     tile.type = TerrainType.Ocean
-                    tile.continentID = 0
                     tile.ocean = true
                 }
             }
@@ -119,16 +136,11 @@ class Map {
 
         for (i in northPoleWestCoast until northPoleEastCoast) {
             tiles[i].type = TerrainType.Plains
-            tiles[i].continentID = if (i - northPoleWestCoast < northPoleEastCoast - i) {
-                tiles[northPoleWestCoast].continentID
-            } else {
-                tiles[northPoleEastCoast].continentID
-            }
         }
 
 
         // South Pole
-        val lastRow = width*(height-1)
+        val lastRow = width * (height - 1)
         val southEdge = tiles.indices.drop(lastRow).filter { tiles[it].type.isLand() }
         var southPoleWestCoast = if (southEdge.isEmpty()) minOceanWidth + 1 else southEdge.first()
         var southPoleEastCoast = if (southEdge.isEmpty()) width - minOceanWidth - 1 else southEdge.last()
@@ -141,11 +153,6 @@ class Map {
 
         for (i in southPoleWestCoast until southPoleEastCoast) {
             tiles[i].type = TerrainType.Plains
-            tiles[i].continentID = if (i - southPoleWestCoast < southPoleEastCoast - i) {
-                tiles[southPoleWestCoast].continentID
-            } else {
-                tiles[southPoleEastCoast].continentID
-            }
         }
 
     }
@@ -190,19 +197,19 @@ class Map {
             if (!continentNoise.containsKey(tile.continentID))
                 continentNoise[tile.continentID] = rng.nextDouble()
 
-            var elevation = getPerlinNoise(tile, continentNoise[tile.continentID]!!, scale = 3.0)
-            elevation = abs(elevation).pow(1.0 - 0.8f) * elevation.sign
+            var elevation = getPerlinNoise(tile, continentNoise[tile.continentID]!!) * (1 + rng.nextDouble())
+            elevation = abs(elevation).pow(0.25)
 
             tile.elevation = elevation
 
             when {
-                elevation > 0.9 -> {
+                elevation > 0.95 -> {
                     tile.type = TerrainType.Mountains
                 }
-                elevation > 0.8 -> {
+                elevation > 0.85 -> {
                     tile.type = if (rng.nextDouble() < 0.6) TerrainType.Mountains else TerrainType.Hills
                 }
-                elevation > 0.7 -> {
+                elevation > 0.75 -> {
                     tile.type = if (rng.nextDouble() < 0.3) TerrainType.Mountains else TerrainType.Hills
                 }
                 else -> {
@@ -228,36 +235,105 @@ class Map {
 
     private fun addRivers() {
         val numRiverSpawns = MapParameters.baseRiverAmount * tiles.count { it.type.isLand() }
-        val numMountains = tiles.filter {
-            it.type == TerrainType.Mountains &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }.shuffled()
-        val numHills = tiles.filter {
-            it.type == TerrainType.Hills &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean }
-        }.shuffled()
-        val numFlat = tiles.filter {
-            it.type.isLand() && it.type != TerrainType.Mountains &&
-                    it.type != TerrainType.Hills &&
-                    it.neighbors.none { tiles[it].type == TerrainType.Ocean } &&
-                    it.elevation >= 0.3 &&
-                    it.elevation >= it.neighbors.map { tiles[it].elevation }.min()!!
-        }.shuffled()
-
-        val numLakes = tiles.filter { it.type == TerrainType.Lakes }
-        println("$numRiverSpawns ${numMountains.size} ${numHills.size} ${numFlat.size} ${numLakes.size}")
 
         // river source chances affected by temperature and humidity
-        // make rivers from some non-ocean-adjoining mountains to nearest lake (snow melt)
-        // make rivers from some non-ocean-adjoining mountains to nearest ocean (snow melt)
-        // make rivers from some non-ocean-adjoining hills to nearest lake (springs)
-        // make rivers from some non-ocean-adjoining hills to nearest ocean (springs)
-        // make rivers from some non-ocean-adjoining tile to nearest lake (rain)
-        // make rivers from some non-ocean-adjoining tile to nearest ocean (rain)
+        val eligibleTiles = tiles.filter {
+            it.type.isLand() &&
+                    it.humidity > 0.1 &&
+                    it.neighbors.none { n -> tiles[n].type.isWater() }
+        }
+        val eligibleMountains = eligibleTiles.filter { it.type == TerrainType.Mountains }
+        val eligibleHills = eligibleTiles.filter { it.type == TerrainType.Hills }
+
+        val numMountainRivers = min((0.7 * numRiverSpawns).toInt(), eligibleMountains.size)
+        val numHillRivers = min((0.15 * numRiverSpawns).toInt(), eligibleHills.size)
+        var numFlatRivers = numRiverSpawns.toInt() - numMountainRivers - numHillRivers
+
+        // make rivers from some non-ocean-adjoining mountains
+        eligibleMountains.shuffled().take(numMountainRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isEmpty())
+                numFlatRivers += 1
+            else
+                applyRiver(river)
+        }
+
+        // make rivers from some non-ocean-adjoining hills
+        eligibleHills.shuffled().take(numHillRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isEmpty())
+                numFlatRivers += 1
+            else
+                applyRiver(river)
+        }
+
+        // make rivers from some non-ocean-adjoining tile
+        eligibleTiles.filter {
+            it.type != TerrainType.Mountains &&
+                    it.type != TerrainType.Hills &&
+                    it.type != TerrainType.Arctic &&
+                    it.neighbors.none { n -> tiles[n].type.isWater() } &&
+                    it.elevation >= it.neighbors.map { n -> tiles[n].elevation }.min()!!
+        }.shuffled().take(numFlatRivers).forEach {
+            val river = flowFromSource(it)
+
+            if (river.isNotEmpty())
+                applyRiver(river)
+        }
+    }
+
+    private fun applyRiver(river: List<Tile>) {
+        for (it in river) {
+            print("{")
+            print(it.x)
+            print(" ")
+            print(it.y)
+            print("} => ")
+        }
+        println("end")
+
+        for (i in 1 until river.size - 1) {
+            val current = river[i]
+            val fromDelta = Pair(river[i - 1].x - current.x, river[i - 1].y - current.y)
+            val toDelta = Pair(river[i + 1].x - current.x, river[i + 1].y - current.y)
+            current.river = River(fromDelta, toDelta)
+        }
+    }
+
+    private fun flowFromSource(from: Tile): List<Tile> {
+        var current = from
+
+        val river = mutableListOf<Tile>()
+
+        while (true) {
+            river.add(current)
+
+            // reached water, so river ends
+            if (current.type.isWater()) break
+
+            // merged with another river
+            // TODO: make the other river bigger
+            if (current.river != null) break
+
+            val neighbors = current.neighbors.map { tiles[it] }.sortedBy { it.elevation }
+            val downhill = neighbors[0]
+            if (downhill.elevation <= current.elevation) {
+                current = downhill
+            } else return mutableListOf<Tile>()
+        }
+
+        return river
     }
 
     private fun scatterBonusResources() {
-//        TODO("Not yet implemented")
+        tiles.filter { it.type.isLand() }.shuffled()
+                .take((MapParameters.bonusResources * tiles.size).toInt())
+                .forEach {
+                    //put relevant resource
+                    it.resource = it.type.bonusResource
+                }
     }
 
     /**

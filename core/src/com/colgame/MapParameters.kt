@@ -32,19 +32,20 @@ object MapParameters {
     enum class Landmass(val multiplier: Int, val decay: Double, val maxLand : Double) {
         Islands(20, 0.3, 0.2),
         Archipelago(20, 0.01, 0.35),
-        Continent(20, 0.001, 0.6)
+        Continent(20, 0.001, 0.65)
     }
 
     val forestCover: Double by lazy { humidity.prcnt * 0.5 }
     const val minEdge: Double = 0.15
-    const val minMountainsElevation = 0.7
-    const val minHillsElevation = 0.3
+    const val minMountainsElevation = 0.75
+    const val minHillsElevation = 0.65
+    const val bonusResources = 0.1
 
     // default map settings
     val size = Size.VerySmall
-    val landMass = Landmass.Archipelago
+    val landMass = Landmass.Continent
     var climate = Climate.Temperate
-    var humidity = Humidity.VeryWet
-    var baseRiverAmount = 0.05
+    var humidity = Humidity.Normal
+    var baseRiverAmount = 0.015
 
 }
