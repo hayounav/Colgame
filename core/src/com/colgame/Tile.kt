@@ -35,6 +35,7 @@ class Tile(map: Map, val x: Int, val y: Int) {
     var elevation = 0.0
 
     var river: River? = null
+    val unitMembers: Array<NationEntity> = arrayOf()
 
     init {
         val tmpNeighbors = ArrayList<Int>()
